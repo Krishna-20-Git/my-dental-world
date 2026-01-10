@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_BASE = "https://my-dental-api.onrender.com";
+const API_BASE = "https://my-dental-api.onrender.com/api";
 
 // --- HERO IMAGES ---
 const heroImages = [

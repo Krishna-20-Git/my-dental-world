@@ -27,6 +27,12 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// --- FIX 1: Ensure these files exist in your folder ---
+import imgDoc3 from "./assets/doctor3.jpg";
+import imgDoc4 from "./assets/doctor4.jpg";
+import imgDoc5 from "./assets/doctor5.jpg";
+import imgDoc6 from "./assets/doctor6.jpg";
+
 const API_BASE = "https://my-dental-api.onrender.com/api";
 
 // --- HERO IMAGES ---
@@ -217,6 +223,7 @@ const locations = [
   },
 ];
 
+// --- FIX 2: UPDATED VARIABLE NAMES TO MATCH IMPORTS ---
 const doctorsList = [
   {
     name: "Dr. Shailendra Jha",
@@ -238,32 +245,28 @@ const doctorsList = [
     name: "Dr. Tijo George",
     qual: "BDS, MDS",
     role: "Senior Consultant",
-    image:
-      "http://www.mydentalworld.co.in/static/5be0a67a6e7bfd880fb33d1c_1be21ca0-ea1b-11e8-9142-859520b784a9New%20Project%20(69).jpg",
+    image: imgDoc3, // Fixed: was docImg3
     desc: "Dr. Tijo George is a senior consultant with more than 8 years of experience. He completed his BDS from the famous Government dental college Kottayam and MDS from the prestigious GDC Calicut. Apart from being a staff at Shymala Reddy Dental College, Marathalli, Bangalore, he is actively engaged in consultations throughout Bangalore. His friendly, humble and down to earth attitude coupled with his excellent handwork makes him completely standout from others",
   },
   {
     name: "Dr. Shameel Ahmed Shariff",
     qual: "BDS, MDS",
     role: "Oral-Maxillofacial Surgeon",
-    image:
-      "http://www.mydentalworld.co.in/static/5be0a67a6e7bfd880fb33d1c_2bbdb670-ea1b-11e8-9142-859520b784a9New%20Project%20(65).jpg",
+    image: imgDoc4, // Fixed: was docImg4
     desc: "Dr.Shameel Ahmed Shariff MDS., Oral-Maxillofacial Surgeon & Implantologist, Asst Prof Maaruti Dental College is a specialist consultant at our unit who specializes in removal of wisdom tooth, dentoalveolar surgeries, orofacial infections management, dental implants placement, direct and indirect sinus lift procedures. He is well known for empathetic management of his patients and has been a feather in our cap.",
   },
   {
     name: "Dr. Krishnand",
     qual: "BDS, MDS",
     role: "Periodontist",
-    image:
-      "http://www.mydentalworld.co.in/static/5be0a67a6e7bfd880fb33d1c_24d53810-ea1b-11e8-9142-859520b784a9New%20Project%20(67).jpg",
+    image: imgDoc5, // Fixed: was docImg5
     desc: "Dr Krishnand Specialized in Gum (Periodontal) Infections, Laser Treatments, Oral Implantology, Facial Aesthetics, and Microsurgery. He has a nice knowledge of Oral Implants and Laser Technology. He holds the record of placing the highest number of Implants in India for his Thesis and also has many National and International publications to his name. He was awarded many awards for his contribution in the field of Periodontology and Implantology.",
   },
   {
     name: "Dr. Vidyanand Mandal",
     qual: "BDS",
     role: "Dental Professional",
-    image:
-      "http://www.mydentalworld.co.in/static/67d0b5aafc9515e80e0f9e7f_db925b10-ca7d-11f0-997e-affdcb41b063WhatsApp%20Image%202025-11-25%20at%2017.30.57_c80f0ecf.jpg",
+    image: imgDoc6, // Fixed: was docImg6
     desc: "Dr. Vidyanand Mandal is a skilled dental professional with a Bachelor of Dental Surgery from Rajasthan University of Health Sciences and over 5 years of rich clinical experience. He is dedicated to delivering gentle, precise, and advanced dental treatments with a personal touch. At My Dental World, Dr. Mandal’s mission is to create healthy, confident, and beautiful smiles through compassionate care and modern technology.",
   },
 ];
@@ -430,7 +433,6 @@ function App() {
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     try {
-      // FIX: Added "/${selectedSlot._id}" to the URL to match the server's expectation
       await axios.post(`${API_BASE}/appointments/book/${selectedSlot._id}`, {
         name: formData.name,
         email: formData.email,

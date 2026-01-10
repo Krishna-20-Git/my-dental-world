@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://my-dental-api.onrender.com/api";
 
 const BRANCH_NAMES = {
   1: "Doddanekundi",

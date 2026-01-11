@@ -62,38 +62,38 @@ const Chatbot = () => {
     () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
     [messages, isOpen]
   );
+const handleSend = async (e) => {
+  e.preventDefault();
+  if (!input.trim()) return;
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const userMsg = { text: input, sender: "user" };
+  setMessages((prev) => [...prev, userMsg]);
+  setInput("");
+  setIsTyping(true);
 
-    const userMsg = { text: input, sender: "user" };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsTyping(true);
+  try {
+    const res = await axios.post(`${API_BASE}/chat`, {
+      message: userMsg.text,
+    });
 
-    try {
-      const res = await axios.post(`${API_BASE}/chat`, {
-        message: userMsg.text,
-      });
-
-      setMessages((prev) => [
-        ...prev,
-        { text: res.data.reply || "I can help with that.", sender: "bot" },
-      ]);
-    } catch (error) {
-      console.error(error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: "I'm having trouble connecting. Please call +91 93422 58492.",
-          sender: "bot",
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+    setMessages((prev) => [
+      ...prev,
+      // FIX IS HERE: Change 'reply' to 'response'
+      { text: res.data.response || "I can help with that.", sender: "bot" },
+    ]);
+  } catch (error) {
+    console.error(error);
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: "I'm having trouble connecting. Please call +91 93422 58492.",
+        sender: "bot",
+      },
+    ]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   return (
     <div className="fixed bottom-6 right-6 z-[200] font-sans">

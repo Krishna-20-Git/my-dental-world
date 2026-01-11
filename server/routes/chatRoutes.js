@@ -16,34 +16,50 @@ router.post("/chat", async (req, res) => {
   }
 
   try {
-    // 2. TRY REAL AI FIRST (Using the Experimental model for best chance of free access)
+    // 2. TRY REAL AI FIRST
+    // Use experimental model for best chance of free access
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     const result = await model.generateContent(userMessage);
     const response = await result.response;
     const text = response.text();
 
-    // If AI works, send the real answer
     return res.json({ response: text });
   } catch (error) {
     console.error("⚠️ AI Failed (Quota/Network) - Using Backup Logic");
 
-    // 3. BACKUP MODE (If AI fails, we answer manually)
+    // 3. BACKUP MODE (Manually programmed answers)
     const lowerCaseMsg = userMessage.toLowerCase();
 
-    // Default fallback if no keywords match
+    // Default fallback
     let backupReply =
-      "I am currently experiencing high traffic. Please call us directly at +91 93422 58492 for immediate assistance.";
+      "I am currently experiencing high traffic. Please call us directly at +91 93422 58492.";
 
     // --- KEYWORD MATCHING ---
 
-    // GREETINGS
+    // BRANCHES / LOCATION / ADDRESS
     if (
-      lowerCaseMsg.includes("hi") ||
-      lowerCaseMsg.includes("hello") ||
-      lowerCaseMsg.includes("hey")
+      lowerCaseMsg.includes("location") ||
+      lowerCaseMsg.includes("address") ||
+      lowerCaseMsg.includes("branch") ||
+      lowerCaseMsg.includes("where")
     ) {
-      backupReply =
-        "Hello! Welcome to My Dental World. I can help with appointments, timings, and clinic details.";
+      backupReply = `We have 4 convenient locations in Bengaluru:
+
+1. 📍 **Doddanekundi (Main)**
+Shop No:50, A.N.M Krishna Reddy Layout, Opp Alpine Eco Apt.
+📞 9342258492
+
+2. 📍 **Mahadevapura**
+Shop No: 5, YSR Skyline, Venkateshwara Layout.
+📞 7975424909
+
+3. 📍 **Whitefield**
+Shop No. 7, ECC Road, Next to Yuken India Ltd.
+📞 8105279462
+
+4. 📍 **Medahalli**
+No.42, Kamashree Layout, Near Big Day Super Market.
+📞 8147061084`;
     }
 
     // TIME / OPEN / SUNDAY
@@ -60,24 +76,12 @@ router.post("/chat", async (req, res) => {
     // DOCTOR INFO
     else if (
       lowerCaseMsg.includes("doctor") ||
-      lowerCaseMsg.includes("who") ||
       lowerCaseMsg.includes("jha") ||
       lowerCaseMsg.includes("shalindra") ||
       lowerCaseMsg.includes("shailendra")
     ) {
       backupReply =
         "Dr. Shailendra Jha is our Chief Dental Surgeon. He has over 15 years of experience specializing in Root Canals and Cosmetic Dentistry.";
-    }
-
-    // LOCATION / ADDRESS
-    else if (
-      lowerCaseMsg.includes("location") ||
-      lowerCaseMsg.includes("where") ||
-      lowerCaseMsg.includes("address") ||
-      lowerCaseMsg.includes("located")
-    ) {
-      backupReply =
-        "We are located at Plot No. 45, Sector 12, near City Center Mall. You can find us on Google Maps as 'My Dental World'.";
     }
 
     // PRICE / COST
@@ -88,7 +92,7 @@ router.post("/chat", async (req, res) => {
       lowerCaseMsg.includes("fees")
     ) {
       backupReply =
-        "Our consultation fee is ₹500. Treatment costs (like RCT or Braces) vary based on the patient's condition.";
+        "Our consultation fee is ₹500. Treatment costs (like RCT or Braces) vary based on the patient's condition. Would you like to book a checkup?";
     }
 
     // APPOINTMENT
@@ -97,7 +101,17 @@ router.post("/chat", async (req, res) => {
       lowerCaseMsg.includes("appointment")
     ) {
       backupReply =
-        "I can help with that. Please call +91 93422 58492 or use the 'Book Now' button on our website.";
+        "I can help with that. Please call our main line at +91 93422 58492 to book a slot.";
+    }
+
+    // GREETINGS
+    else if (
+      lowerCaseMsg.includes("hi") ||
+      lowerCaseMsg.includes("hello") ||
+      lowerCaseMsg.includes("hey")
+    ) {
+      backupReply =
+        "Hello! Welcome to My Dental World. Ask me about our locations, doctors, or timings!";
     }
 
     return res.json({ response: backupReply });

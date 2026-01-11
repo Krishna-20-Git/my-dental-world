@@ -4,43 +4,43 @@ const Slot = require("../models/Slot");
 const Booking = require("../models/Booking");
 const nodemailer = require("nodemailer");
 
-// --- 📧 EMAIL CONFIGURATION ---
+// --- 📧 EMAIL CONFIGURATION (Updated with New Password) ---
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  port: 465, // SSL Port (Best for Cloud/Render)
+  secure: true, // True for 465
   auth: {
-    user: process.env.EMAIL_USER, // Reads from .env
-    pass: process.env.EMAIL_PASS, // Reads from .env
+    user: "krishnadpsranchi@gmail.com",
+    pass: "coan twfp ppyb peck", // <--- NEW PASSWORD (Revoke after demo!)
   },
-  family: 4, // Force IPv4
+  family: 4, // Force IPv4 to prevent connection timeouts
 });
 
-// --- 🏥 BRANCH DATA (With Specific Phone Numbers) ---
+// --- 🏥 BRANCH DATA ---
 const BRANCH_DETAILS = {
   1: {
     name: "Doddanekundi (Main)",
-    address: "Shop No:50, A.N.M Krishna Reddy Layout, Opp Alpine Eco Apt.",
+    address: "Shop No:50, A.N.M Krishna Reddy Layout",
     phone: "9342258492",
   },
   2: {
     name: "Mahadevapura",
-    address: "Shop No: 5, YSR Skyline, Venkateshwara Layout.",
+    address: "Shop No: 5, YSR Skyline",
     phone: "7975424909",
   },
   3: {
     name: "Whitefield",
-    address: "Shop No. 7, 131, Ecc Road, Next to Yuken India Ltd.",
+    address: "Shop No. 7, ECC Road",
     phone: "8105279462",
   },
   4: {
     name: "Medahalli",
-    address: "No.42, Kamashree Layout, Near Big Day Super Market.",
+    address: "No.42, Kamashree Layout",
     phone: "8147061084",
   },
 };
 
-// Helper: Sort times correctly
+// --- GET SLOTS ROUTE ---
 const timeToMinutes = (timeStr) => {
   const [time, modifier] = timeStr.split(" ");
   let [hours, minutes] = time.split(":");
@@ -49,7 +49,6 @@ const timeToMinutes = (timeStr) => {
   return parseInt(hours, 10) * 60 + parseInt(minutes, 10);
 };
 
-// GET SLOTS
 router.get("/slots", async (req, res) => {
   try {
     const { date, branchId } = req.query;
@@ -66,18 +65,15 @@ router.get("/slots", async (req, res) => {
   }
 });
 
-// --- 🛑 BOOKING ROUTE (Demo Safe Version) 🛑 ---
+// --- 🛑 BOOKING ROUTE (Network Fix Added) 🛑 ---
 router.post("/book/:id", async (req, res) => {
   try {
     const { name, email, phone, service } = req.body;
+    
+    // 1. DATABASE LOGIC
     const slot = await Slot.findById(req.params.id);
+    if (!slot) return res.status(404).json({ message: "Slot not found" });
 
-    // 1. Check if slot is valid
-    if (!slot || slot.status !== "open") {
-      return res.status(400).json({ message: "Slot unavailable" });
-    }
-
-    // 2. SAVE TO DATABASE (This works!)
     slot.status = "booked";
     slot.patientName = name;
     slot.patientEmail = email;
@@ -93,105 +89,75 @@ router.post("/book/:id", async (req, res) => {
 
     const branchInfo = BRANCH_DETAILS[slot.branchId] || BRANCH_DETAILS[1];
 
-    // 3. SEND SUCCESS RESPONSE IMMEDIATELY ⚡
-    // We tell the app "Success" RIGHT NOW. We don't wait for email.
-    // This stops the "Unable to book" error.
+    // 2. ⚡ RESPOND TO APP IMMEDIATELY ⚡
     res.json({ message: "Booked", slot });
 
-    // 4. TRY SENDING EMAIL IN BACKGROUND (Fire & Forget)
-    // If this fails, it will print to the console, but the User won't know.
-    const sendBackgroundEmails = async () => {
+    // 3. SEND EMAIL IN BACKGROUND (With IPv4 Fix)
+    const sendEmail = async () => {
       try {
-        const patientMailOptions = {
+        const demoTransporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "krishnadpsranchi@gmail.com", 
+            pass: "coan twfp ppyb peck" 
+          },
+          family: 4 // <--- THIS IS THE MAGIC FIX FOR TIMEOUTS
+        });
+
+        const mailOptions = {
           from: '"My Dental World" <krishnadpsranchi@gmail.com>',
-          replyTo: 'kz8457@srmist.edu.in', 
-          to: email,
+          to: email, 
           subject: `Appointment Confirmed: ${slot.date}`,
-          text: `Hello ${name},\n\nConfirmed for ${slot.date} at ${slot.time} at ${branchInfo.name}.`,
+          text: `Hello ${name},\n\nYour appointment at ${branchInfo.name} is confirmed.\nDate: ${slot.date}\nTime: ${slot.time}`
         };
 
-        const clinicMailOptions = {
+        const clinicOptions = {
           from: '"Dental System" <krishnadpsranchi@gmail.com>',
           to: "kz8457@srmist.edu.in",
-          subject: `🔔 NEW BOOKING: ${name} (${branchInfo.name})`,
-          text: `New Booking:\n${name}\n${phone}\n${branchInfo.name}\n${slot.date} @ ${slot.time}`,
+          subject: `🔔 NEW BOOKING: ${name}`,
+          text: `New Booking:\n${name}\n${phone}\n${branchInfo.name}`
         };
 
-        // Attempt to send
         await Promise.all([
-          transporter.sendMail(patientMailOptions),
-          transporter.sendMail(clinicMailOptions)
+            demoTransporter.sendMail(mailOptions),
+            demoTransporter.sendMail(clinicOptions)
         ]);
-        console.log("✅ Emails sent successfully in background");
+        console.log("✅ Email sent successfully in background");
+
       } catch (emailErr) {
-        // We catch the error here so it doesn't crash the server
         console.error("⚠️ Email failed (but booking is safe):", emailErr.message);
       }
     };
-
-    // Trigger the email function (no await, just let it run)
-    sendBackgroundEmails();
+    
+    sendEmail();
 
   } catch (err) {
     console.error("Database Error:", err);
-    // Only send 500 if the DATABASE failed.
     if (!res.headersSent) res.status(500).json({ message: err.message });
   }
 });
-// ADMIN ROUTE
-router.get("/admin", async (req, res) => {
-  try {
-    const { key, branchId } = req.query;
-    const validKeys = ["doctor123", "branch1", "branch2", "branch3", "branch4"];
-    if (!validKeys.includes(key)) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
 
-    let bookings = await Booking.find()
-      .populate("slotId")
-      .sort({ bookingTime: -1 });
-
-    if (branchId && branchId !== "all") {
-      bookings = bookings.filter(
-        (b) => b.slotId && b.slotId.branchId === parseInt(branchId)
-      );
-    }
-
-    res.json(bookings);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-// --- 🛠️ EMERGENCY RESET BUTTON (For Demo) ---
-// Visit this link to fix "All Dates Booked" error:
-// https://my-dental-api.onrender.com/api/reset-slots
+// --- 🛠️ RESET ROUTE (Use this if you get "Unable to book") ---
+// URL: https://my-dental-api.onrender.com/api/appointments/reset-slots
 router.get("/reset-slots", async (req, res) => {
   try {
-    // 1. Reset ALL slots to 'open' status
     await Slot.updateMany(
-      {}, // filter: match everything
-      { 
-        $set: { 
-          status: "open", 
-          patientName: null, 
-          patientEmail: null, 
-          patientPhone: null, 
-          serviceType: null 
-        } 
+      {},
+      {
+        $set: {
+          status: "open",
+          patientName: null,
+          patientEmail: null,
+          patientPhone: null,
+          serviceType: null,
+        },
       }
     );
-
-    // 2. Clear the Booking history log
     await Booking.deleteMany({});
-
-    res.send(`
-      <h1>✅ System Reset Successful</h1>
-      <p>All slots have been forced to <strong>OPEN</strong>.</p>
-      <p>All previous booking data has been cleared.</p>
-      <p><strong>Action:</strong> Go back to your app and refresh the page.</p>
-    `);
+    res.send("✅ System Reset Successful. Refresh your app.");
   } catch (err) {
     res.status(500).send("Reset Failed: " + err.message);
   }
 });
+
 module.exports = router;

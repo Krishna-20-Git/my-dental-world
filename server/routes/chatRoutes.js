@@ -45,19 +45,19 @@ router.post("/chat", async (req, res) => {
     ) {
       backupReply = `We have 4 convenient locations in Bengaluru:
 
-1. 📍 **Doddanekundi (Main)**
+1. 📍 Doddanekundi (Main)
 Shop No:50, A.N.M Krishna Reddy Layout, Opp Alpine Eco Apt.
 📞 9342258492
 
-2. 📍 **Mahadevapura**
+2. 📍 Mahadevapura
 Shop No: 5, YSR Skyline, Venkateshwara Layout.
 📞 7975424909
 
-3. 📍 **Whitefield**
+3. 📍 Whitefield
 Shop No. 7, ECC Road, Next to Yuken India Ltd.
 📞 8105279462
 
-4. 📍 **Medahalli**
+4. 📍 Medahalli
 No.42, Kamashree Layout, Near Big Day Super Market.
 📞 8147061084`;
     }
@@ -70,7 +70,7 @@ No.42, Kamashree Layout, Near Big Day Super Market.
       lowerCaseMsg.includes("sunday")
     ) {
       backupReply =
-        "We are open Monday to Saturday from 10:00 AM to 8:00 PM. On Sundays, we are open for emergency appointments only (10:00 AM - 1:00 PM).";
+        "We are open Monday to Saturday from 10:00 AM to 8:00 PM. On Sundays, we are open for only 10:00 AM - 2:00 PM.";
     }
 
     // DOCTOR INFO

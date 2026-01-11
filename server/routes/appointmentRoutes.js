@@ -6,11 +6,21 @@ const nodemailer = require("nodemailer");
 
 // --- 📧 EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com", // Explicitly define the host
+  port: 587, // Use Port 587 (Less likely to be blocked than 465)
+  secure: false, // Must be false for port 587
   auth: {
     user: "krishnadpsranchi@gmail.com",
     pass: "kwrh tfvi vhnw kzjb",
   },
+  tls: {
+    ciphers: "SSLv3", // Helps with compatibility
+  },
+  // ⚡ FIX FOR TIMEOUTS:
+  connectionTimeout: 10000, // Wait 10 seconds before giving up
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  family: 4, // <--- CRITICAL: Force IPv4 (Render often fails with IPv6)
 });
 
 // --- 🏥 BRANCH DATA (With Specific Phone Numbers) ---
@@ -63,7 +73,7 @@ router.get("/slots", async (req, res) => {
   }
 });
 
-// --- 🛑 BOOKING ROUTE 🛑 ---
+// --- 🛑 BOOKING ROUTE (FIXED) 🛑 ---
 router.post("/book/:id", async (req, res) => {
   try {
     const { name, email, phone, service } = req.body;
@@ -89,11 +99,10 @@ router.post("/book/:id", async (req, res) => {
     });
 
     // Get Branch Info
-    // Default to Main branch if ID is missing for some reason
     const branchInfo = BRANCH_DETAILS[slot.branchId] || BRANCH_DETAILS[1];
 
-    // --- 📧 EMAIL CONTENT (Treatment Removed, Dynamic Phone Added) ---
-    const mailOptions = {
+    // --- 📧 1. EMAIL TO PATIENT ---
+    const patientMailOptions = {
       from: '"My Dental World" <jhashailendra1979@gmail.com>',
       to: email,
       subject: `Appointment Confirmed: ${slot.date}`,
@@ -108,28 +117,45 @@ Your Appointment Details:
 🏥 Clinic: ${branchInfo.name}
 📍 Address: ${branchInfo.address}
 
-Important Information:
-----------------------------------------
-• Please arrive 10 minutes early to complete any necessary paperwork.
-• No special preparation is required for this consultation.
-• If you are feeling anxious, please let us know—we are here to make you comfortable.
-
 Need to Reschedule?
-If you need to change your appointment, please call this clinic directly:
 📞 Clinic Phone: +91 ${branchInfo.phone}
-✉️ Email: jhashailendra1979@gmail.com
-
-We look forward to taking care of your smile!
 
 Warm Regards,
-Dr. Shailendra Jha & Team
-My Dental World`,
+Dr. Shailendra Jha & Team`,
     };
 
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) console.log("⚠️ Email failed:", err.message);
-      else console.log("✅ Email sent to", email);
-    });
+    // --- 📧 2. EMAIL TO CLINIC/RECEPTION (Demo) ---
+    const clinicMailOptions = {
+      from: '"My Dental World System" <jhashailendra1979@gmail.com>',
+      to: "kz8457@srmist.edu.in", // <--- YOUR EMAIL FOR DEMO
+      subject: `🔔 NEW BOOKING: ${name} (${branchInfo.name})`,
+      text: `*** NEW PATIENT ALERT ***
+
+A new appointment has been booked via the website.
+
+👤 Patient Name: ${name}
+📞 Phone: ${phone}
+🏥 Branch: ${branchInfo.name}
+📅 Date: ${slot.date}
+⏰ Time: ${slot.time}
+🦷 Service: ${service}
+
+Please update the clinic register accordingly.`,
+    };
+
+    // --- ⚡ THE FIX: WAIT FOR EMAILS ---
+    // This forces the server to wait until Google accepts the emails
+    try {
+      await Promise.all([
+        transporter.sendMail(patientMailOptions),
+        transporter.sendMail(clinicMailOptions)
+      ]);
+      console.log("✅ Both emails sent successfully!");
+    } catch (emailError) {
+      console.error("⚠️ Email sending failed:", emailError.message);
+      // We still allow the booking to complete even if email fails, 
+      // but we log it so you know.
+    }
 
     res.json({ message: "Booked", slot });
   } catch (err) {
@@ -137,7 +163,6 @@ My Dental World`,
     res.status(500).json({ message: err.message });
   }
 });
-
 // ADMIN ROUTE
 router.get("/admin", async (req, res) => {
   try {

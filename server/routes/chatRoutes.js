@@ -16,7 +16,7 @@ router.post("/chat", async (req, res) => {
   try {
     // 2. AI ATTEMPT
     // Use the reliable "Lite" model for speed
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(userMessage);
     const response = await result.response;
     const text = response.text();

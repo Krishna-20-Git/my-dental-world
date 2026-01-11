@@ -1,39 +1,67 @@
-router.post("/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
+const express = require("express");
+const router = express.Router();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+require("dotenv").config();
 
-    // 1. Try to use the AI (Use the 'Lite' model, it is fastest)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+
+router.post("/chat", async (req, res) => {
+  // 1. INPUT CHECK: Stop crashes if message is empty
+  const userMessage = req.body.message || "";
+
+  if (!userMessage) {
+    return res.json({ response: "Hello! How can I help you today?" });
+  }
+
+  try {
+    // 2. AI ATTEMPT
+    // Use the reliable "Lite" model for speed
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
-    const result = await model.generateContent(message);
+    const result = await model.generateContent(userMessage);
     const response = await result.response;
     const text = response.text();
 
-    res.json({ response: text });
+    return res.json({ response: text });
   } catch (error) {
-    console.error("⚠️ AI Error (Quota or Network):", error.message);
+    console.error("⚠️ AI Failed - Switching to Backup Mode:", error.message);
 
-    // 2. THE DEMO SAVER: If AI fails, send a polite fallback instead of crashing
-    // You can customize these replies for your pitch flow
+    // 3. SAFE BACKUP SYSTEM (The Demo Saver)
+    const lowerCaseMsg = userMessage.toLowerCase();
     let backupReply =
-      "I can definitely help with that. Please call our reception at +91 93422 58492 to book an appointment immediately.";
+      "I can definitely help with that. Please call our reception at +91 93422 58492 to book an appointment.";
 
+    // Smart Keywords (Add more if you want)
     if (
-      req.body.message.toLowerCase().includes("price") ||
-      req.body.message.toLowerCase().includes("cost")
+      lowerCaseMsg.includes("price") ||
+      lowerCaseMsg.includes("cost") ||
+      lowerCaseMsg.includes("fee")
     ) {
       backupReply =
-        "Our consultation fees start at ₹500. For specific treatments like Root Canals, we need to examine you first. Would you like to book a slot?";
+        "Our consultation fees start at ₹500. Specific treatments depend on the doctor's examination.";
     }
 
     if (
-      req.body.message.toLowerCase().includes("time") ||
-      req.body.message.toLowerCase().includes("open")
+      lowerCaseMsg.includes("time") ||
+      lowerCaseMsg.includes("open") ||
+      lowerCaseMsg.includes("schedule")
     ) {
       backupReply =
         "We are open from 10:00 AM to 8:00 PM, Monday through Saturday.";
     }
 
-    // Return the fake response as if it was real
-    res.json({ response: backupReply });
+    if (lowerCaseMsg.includes("root canal") || lowerCaseMsg.includes("rct")) {
+      backupReply =
+        "Root Canal Treatments are our specialty. The procedure is painless and usually takes 2 sittings.";
+    }
+
+    if (lowerCaseMsg.includes("hi") || lowerCaseMsg.includes("hello")) {
+      backupReply =
+        "Hello! I am the Dental Assistant for My Dental World. How can I help you?";
+    }
+
+    // Send the backup reply safely
+    return res.json({ response: backupReply });
   }
 });
+
+module.exports = router;

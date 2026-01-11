@@ -6,21 +6,14 @@ const nodemailer = require("nodemailer");
 
 // --- 📧 EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com", // Explicitly define the host
-  port: 587, // Use Port 587 (Less likely to be blocked than 465)
-  secure: false, // Must be false for port 587
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
-    user: "krishnadpsranchi@gmail.com",
-    pass: "kwrh tfvi vhnw kzjb",
+    user: "krishnadpsranchi@gmail.com", // YOUR LOGIN
+    pass: "kwrh tfvi vhnw kzjb", // YOUR APP PASSWORD
   },
-  tls: {
-    ciphers: "SSLv3", // Helps with compatibility
-  },
-  // ⚡ FIX FOR TIMEOUTS:
-  connectionTimeout: 10000, // Wait 10 seconds before giving up
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  family: 4, // <--- CRITICAL: Force IPv4 (Render often fails with IPv6)
+  family: 4, // Force IPv4
 });
 
 // --- 🏥 BRANCH DATA (With Specific Phone Numbers) ---
@@ -84,26 +77,26 @@ router.post("/book/:id", async (req, res) => {
     }
 
     // Update Slot
-    slot.status = "booked";
-    slot.patientName = name;
-    slot.patientEmail = email;
-    slot.patientPhone = phone;
-    slot.serviceType = service;
-    await slot.save();
+   slot.status = "booked";
+   slot.patientName = name;
+   slot.patientEmail = email;
+   slot.patientPhone = phone;
+   slot.serviceType = service;
+   await slot.save();
 
-    // Create Booking Record
-    await Booking.create({
-      slotId: slot._id,
-      patientName: name,
-      patientPhone: phone,
-    });
+   await Booking.create({
+     slotId: slot._id,
+     patientName: name,
+     patientPhone: phone,
+   });
 
     // Get Branch Info
     const branchInfo = BRANCH_DETAILS[slot.branchId] || BRANCH_DETAILS[1];
 
     // --- 📧 1. EMAIL TO PATIENT ---
     const patientMailOptions = {
-      from: '"My Dental World" <jhashailendra1979@gmail.com>',
+      from: '"My Dental World" <krishnadpsranchi@gmail.com>',
+      replyTo: "kz8457@srmist.edu.in",
       to: email,
       subject: `Appointment Confirmed: ${slot.date}`,
       text: `Hello ${name},
@@ -126,7 +119,7 @@ Dr. Shailendra Jha & Team`,
 
     // --- 📧 2. EMAIL TO CLINIC/RECEPTION (Demo) ---
     const clinicMailOptions = {
-      from: '"My Dental World System" <jhashailendra1979@gmail.com>',
+      from: '"My Dental World System" <krishnadpsranchi@gmail.com>',
       to: "kz8457@srmist.edu.in", // <--- YOUR EMAIL FOR DEMO
       subject: `🔔 NEW BOOKING: ${name} (${branchInfo.name})`,
       text: `*** NEW PATIENT ALERT ***
@@ -148,12 +141,12 @@ Please update the clinic register accordingly.`,
     try {
       await Promise.all([
         transporter.sendMail(patientMailOptions),
-        transporter.sendMail(clinicMailOptions)
+        transporter.sendMail(clinicMailOptions),
       ]);
       console.log("✅ Both emails sent successfully!");
     } catch (emailError) {
       console.error("⚠️ Email sending failed:", emailError.message);
-      // We still allow the booking to complete even if email fails, 
+      // We still allow the booking to complete even if email fails,
       // but we log it so you know.
     }
 

@@ -180,5 +180,36 @@ router.get("/admin", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// --- 🛠️ EMERGENCY RESET BUTTON (For Demo) ---
+// Visit this link to fix "All Dates Booked" error:
+// https://my-dental-api.onrender.com/api/reset-slots
+router.get("/reset-slots", async (req, res) => {
+  try {
+    // 1. Reset ALL slots to 'open' status
+    await Slot.updateMany(
+      {}, // filter: match everything
+      { 
+        $set: { 
+          status: "open", 
+          patientName: null, 
+          patientEmail: null, 
+          patientPhone: null, 
+          serviceType: null 
+        } 
+      }
+    );
 
+    // 2. Clear the Booking history log
+    await Booking.deleteMany({});
+
+    res.send(`
+      <h1>✅ System Reset Successful</h1>
+      <p>All slots have been forced to <strong>OPEN</strong>.</p>
+      <p>All previous booking data has been cleared.</p>
+      <p><strong>Action:</strong> Go back to your app and refresh the page.</p>
+    `);
+  } catch (err) {
+    res.status(500).send("Reset Failed: " + err.message);
+  }
+});
 module.exports = router;

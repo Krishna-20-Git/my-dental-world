@@ -66,94 +66,76 @@ router.get("/slots", async (req, res) => {
   }
 });
 
-// --- 🛑 BOOKING ROUTE (FIXED) 🛑 ---
+// --- 🛑 BOOKING ROUTE (Demo Safe Version) 🛑 ---
 router.post("/book/:id", async (req, res) => {
   try {
     const { name, email, phone, service } = req.body;
     const slot = await Slot.findById(req.params.id);
 
+    // 1. Check if slot is valid
     if (!slot || slot.status !== "open") {
       return res.status(400).json({ message: "Slot unavailable" });
     }
 
-    // Update Slot
-   slot.status = "booked";
-   slot.patientName = name;
-   slot.patientEmail = email;
-   slot.patientPhone = phone;
-   slot.serviceType = service;
-   await slot.save();
+    // 2. SAVE TO DATABASE (This works!)
+    slot.status = "booked";
+    slot.patientName = name;
+    slot.patientEmail = email;
+    slot.patientPhone = phone;
+    slot.serviceType = service;
+    await slot.save();
 
-   await Booking.create({
-     slotId: slot._id,
-     patientName: name,
-     patientPhone: phone,
-   });
+    await Booking.create({
+      slotId: slot._id,
+      patientName: name,
+      patientPhone: phone,
+    });
 
-    // Get Branch Info
     const branchInfo = BRANCH_DETAILS[slot.branchId] || BRANCH_DETAILS[1];
 
-    // --- 📧 1. EMAIL TO PATIENT ---
-    const patientMailOptions = {
-      from: '"My Dental World" <krishnadpsranchi@gmail.com>',
-      replyTo: "kz8457@srmist.edu.in",
-      to: email,
-      subject: `Appointment Confirmed: ${slot.date}`,
-      text: `Hello ${name},
-
-We are pleased to confirm your appointment at My Dental World.
-
-Your Appointment Details:
-----------------------------------------
-📅 Date: ${slot.date}
-⏰ Time: ${slot.time}
-🏥 Clinic: ${branchInfo.name}
-📍 Address: ${branchInfo.address}
-
-Need to Reschedule?
-📞 Clinic Phone: +91 ${branchInfo.phone}
-
-Warm Regards,
-Dr. Shailendra Jha & Team`,
-    };
-
-    // --- 📧 2. EMAIL TO CLINIC/RECEPTION (Demo) ---
-    const clinicMailOptions = {
-      from: '"My Dental World System" <krishnadpsranchi@gmail.com>',
-      to: "kz8457@srmist.edu.in", // <--- YOUR EMAIL FOR DEMO
-      subject: `🔔 NEW BOOKING: ${name} (${branchInfo.name})`,
-      text: `*** NEW PATIENT ALERT ***
-
-A new appointment has been booked via the website.
-
-👤 Patient Name: ${name}
-📞 Phone: ${phone}
-🏥 Branch: ${branchInfo.name}
-📅 Date: ${slot.date}
-⏰ Time: ${slot.time}
-🦷 Service: ${service}
-
-Please update the clinic register accordingly.`,
-    };
-
-    // --- ⚡ THE FIX: WAIT FOR EMAILS ---
-    // This forces the server to wait until Google accepts the emails
-    try {
-      await Promise.all([
-        transporter.sendMail(patientMailOptions),
-        transporter.sendMail(clinicMailOptions),
-      ]);
-      console.log("✅ Both emails sent successfully!");
-    } catch (emailError) {
-      console.error("⚠️ Email sending failed:", emailError.message);
-      // We still allow the booking to complete even if email fails,
-      // but we log it so you know.
-    }
-
+    // 3. SEND SUCCESS RESPONSE IMMEDIATELY ⚡
+    // We tell the app "Success" RIGHT NOW. We don't wait for email.
+    // This stops the "Unable to book" error.
     res.json({ message: "Booked", slot });
+
+    // 4. TRY SENDING EMAIL IN BACKGROUND (Fire & Forget)
+    // If this fails, it will print to the console, but the User won't know.
+    const sendBackgroundEmails = async () => {
+      try {
+        const patientMailOptions = {
+          from: '"My Dental World" <krishnadpsranchi@gmail.com>',
+          replyTo: 'kz8457@srmist.edu.in', 
+          to: email,
+          subject: `Appointment Confirmed: ${slot.date}`,
+          text: `Hello ${name},\n\nConfirmed for ${slot.date} at ${slot.time} at ${branchInfo.name}.`,
+        };
+
+        const clinicMailOptions = {
+          from: '"Dental System" <krishnadpsranchi@gmail.com>',
+          to: "kz8457@srmist.edu.in",
+          subject: `🔔 NEW BOOKING: ${name} (${branchInfo.name})`,
+          text: `New Booking:\n${name}\n${phone}\n${branchInfo.name}\n${slot.date} @ ${slot.time}`,
+        };
+
+        // Attempt to send
+        await Promise.all([
+          transporter.sendMail(patientMailOptions),
+          transporter.sendMail(clinicMailOptions)
+        ]);
+        console.log("✅ Emails sent successfully in background");
+      } catch (emailErr) {
+        // We catch the error here so it doesn't crash the server
+        console.error("⚠️ Email failed (but booking is safe):", emailErr.message);
+      }
+    };
+
+    // Trigger the email function (no await, just let it run)
+    sendBackgroundEmails();
+
   } catch (err) {
-    console.error("Booking Error:", err);
-    res.status(500).json({ message: err.message });
+    console.error("Database Error:", err);
+    // Only send 500 if the DATABASE failed.
+    if (!res.headersSent) res.status(500).json({ message: err.message });
   }
 });
 // ADMIN ROUTE

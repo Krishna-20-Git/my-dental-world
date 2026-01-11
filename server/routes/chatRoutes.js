@@ -36,30 +36,19 @@ router.post("/chat", async (req, res) => {
 
     // --- KEYWORD MATCHING ---
 
-    // BRANCHES / LOCATION / ADDRESS
+    // BRANCHES / LOCATION / ADDRESS (Clean Version)
     if (
       lowerCaseMsg.includes("location") ||
       lowerCaseMsg.includes("address") ||
       lowerCaseMsg.includes("branch") ||
       lowerCaseMsg.includes("where")
     ) {
-      backupReply = `We have 4 convenient locations in Bengaluru:
+      backupReply = `We have 4 branches in Bengaluru:
 
-1. 📍 Doddanekundi (Main)
-Shop No:50, A.N.M Krishna Reddy Layout, Opp Alpine Eco Apt.
-📞 9342258492
-
-2. 📍 Mahadevapura
-Shop No: 5, YSR Skyline, Venkateshwara Layout.
-📞 7975424909
-
-3. 📍 Whitefield
-Shop No. 7, ECC Road, Next to Yuken India Ltd.
-📞 8105279462
-
-4. 📍 Medahalli
-No.42, Kamashree Layout, Near Big Day Super Market.
-📞 8147061084`;
+1. Doddanekundi (Main)
+2. Mahadevapura
+3. Whitefield
+4. Medahalli`;
     }
 
     // TIME / OPEN / SUNDAY

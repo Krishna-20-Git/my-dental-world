@@ -25,7 +25,7 @@ RULES FOR ANSWERS:
 5. "Booking": Tell them to use the "Book Now" form on the website.
 6. "Price": Consultations are ₹500. Treatments depend on diagnosis.
 
-Keep answers short (max 3 sentences).
+Keep answers short (max 2 sentences).
 `;
 
 router.post("/chat", async (req, res) => {
